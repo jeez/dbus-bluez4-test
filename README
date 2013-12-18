@@ -1,4 +1,4 @@
-## SUMARY ##
+## SUMMARY ##
 A very simple and quick test to make sure a user can access
 the DBUS System Bus and query something.
 
@@ -7,3 +7,28 @@ g++ -o dbus-bluez4-test `pkg-config --cflags --libs gio-2.0` dbus-bluez4-test.cc
 
 ## GENERATE PACKAGE ##
 gbs build -A i586
+
+## DESCRIBING THE BUG on TIZEN 2.x ##
+Summary: I can't get any code that use the DBUS System BUS to work properly.
+Or at least not without giving 'w' (write) access from my SMACK label to the "_" (floor) label.
+Since the floor label is the system's label, that is unacceptable.
+
+After installing this you can just run it with "/usr/bin/dbus-bluez4-test".
+
+If you run it as 'root' you will see:
+"Starting BlueZ4 SystemBus test"
+"Got DefaultAdapter Path: /org/bluez/513/hci0"
+
+If you run it as any other user (app) you will see:
+"Starting BlueZ4 SystemBus test"
+"## Manager Proxy creation error: Could not connect: Permission denied"
+
+
+After running as app, I go back to the root user and run "dmesg | grep -i smack". That gives me:
+
+"[62891.260650] type=1400 audit(1388706251.319:31254): lsm=SMACK fn=smack_unix_stream_connect action=denied subject=\"dbus-bluez4-test\" object=\"_\" requested=w pid=1825 comm=\"pool\" path=\"/var/run/dbus/system_bus_socket"
+
+
+So, in summary, SMACK is telling me that my label "dbus-bluez4-test" tried to write to the label "_", which is not permitted. It also tells me that it has something to do with "/var/run/dbus/system_bus_socket". Funny enough, If I check this path's smack label with "chsmack /var/run/dbus/system_bus_socket", it tells that its access label is "*", which should give me full access to it.
+
+It looks like it should have something to do with the DBUS System label being under the "_" SMACK label, but that wouldn't make much sense, right?
